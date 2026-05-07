@@ -1,7 +1,13 @@
-"scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start",
-  "lint": "next lint",
-  "postinstall": "prisma generate" 
+{
+  "name": "expensetracker-root",
+  "private": true,
+  "workspaces": [
+    "my-expense-tracker"
+  ],
+  "scripts": {
+    "dev": "npm --prefix my-expense-tracker run dev",
+    "build": "npm --prefix my-expense-tracker run build",
+    "start": "npm --prefix my-expense-tracker run start",
+    "lint": "npm --prefix my-expense-tracker run lint"
+  }
 }
