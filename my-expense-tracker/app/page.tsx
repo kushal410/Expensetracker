@@ -1,4 +1,47 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { ExpenseForm } from "@/components/ExpenseForm";
+import { ExpenseList } from "@/components/ExpenseList";
+import { StatsCard } from "@/components/StatsCard";
+
+type Expense = {
+  id: string;
+  title: string;
+  amount: number;
+  category: string;
+  date: string;
+};
+
 export default function Home() {
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const total = useMemo(
+    () => expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0),
+    [expenses],
+  );
+
+  async function refresh() {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/expenses", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to load expenses");
+      const data = (await res.json()) as Expense[];
+      setExpenses(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
   return (
     <div className="flex min-h-dvh flex-col bg-zinc-50 font-sans text-zinc-900 dark:bg-black dark:text-zinc-50">
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-16">
@@ -9,28 +52,26 @@ export default function Home() {
           </p>
         </header>
 
-        <section className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Your Next.js app was still showing the default starter page. Replace this
-            file to build your tracker UI.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <a
-              className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-              href="/"
-            >
-              Home
-            </a>
-            <a
-              className="inline-flex h-10 items-center justify-center rounded-full border border-black/10 px-4 text-sm font-medium hover:bg-black/[.04] dark:border-white/10 dark:hover:bg-white/[.06]"
-              href="https://nextjs.org/docs"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Next.js Docs
-            </a>
-          </div>
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <StatsCard label="Total spent" value={`$${total.toFixed(2)}`} />
+          <StatsCard label="Expenses" value={`${expenses.length}`} />
         </section>
+
+        <ExpenseForm onCreated={refresh} />
+
+        {error ? (
+          <div className="rounded-2xl border border-red-500/30 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-950/30 dark:text-red-200">
+            {error}
+          </div>
+        ) : null}
+
+        {isLoading ? (
+          <div className="rounded-2xl border border-black/10 bg-white p-6 text-sm text-zinc-600 shadow-sm dark:border-white/10 dark:bg-zinc-950 dark:text-zinc-400">
+            Loading...
+          </div>
+        ) : (
+          <ExpenseList expenses={expenses} onDeleted={refresh} />
+        )}
       </main>
     </div>
   );
